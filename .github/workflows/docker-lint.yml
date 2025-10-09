@@ -1,0 +1,63 @@
+name: Dockerfile Lint
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'dockfile/**'
+      - '.github/workflows/docker-lint.yml'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - 'dockfile/**'
+      - '.github/workflows/docker-lint.yml'
+
+jobs:
+  dockerfile-lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Lint Dockerfile (base)
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: dockfile/Dockerfile
+        format: sarif
+        output-file: hadolint-base.sarif
+        no-fail: true
+
+    - name: Lint Dockerfile (seeksoulmethy)
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: dockfile/Dockerfile.env_seeksoulmethy
+        format: sarif
+        output-file: hadolint-seeksoulmethy.sarif
+        no-fail: true
+
+    - name: Upload Hadolint scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: hadolint-base.sarif
+
+    - name: Upload Hadolint scan results to GitHub Security tab (seeksoulmethy)
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: hadolint-seeksoulmethy.sarif
+
+    - name: Lint Dockerfile (base) - fail on error
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: dockfile/Dockerfile
+        format: tty
+        failure-threshold: error
+
+    - name: Lint Dockerfile (seeksoulmethy) - fail on error
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: dockfile/Dockerfile.env_seeksoulmethy
+        format: tty
+        failure-threshold: error

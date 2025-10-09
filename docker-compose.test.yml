@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # Test base Docker image
+  test-base:
+    build:
+      context: .
+      dockerfile: dockfile/Dockerfile
+    image: nf-rna-methy-pipe:base-test
+    command: |
+      /bin/bash -c "
+        echo 'Testing base image...' &&
+        echo 'Checking essential tools:' &&
+        which awk && echo 'awk: OK' &&
+        which grep && echo 'grep: OK' &&
+        which sed && echo 'sed: OK' &&
+        which ps && echo 'ps: OK' &&
+        which tail && echo 'tail: OK' &&
+        which tee && echo 'tee: OK' &&
+        echo 'Base image test completed successfully!'
+      "
+    profiles:
+      - test
+
+  # Test seeksoulmethy Docker image
+  test-seeksoulmethy:
+    build:
+      context: .
+      dockerfile: dockfile/Dockerfile.env_seeksoulmethy
+    image: nf-rna-methy-pipe:seeksoulmethy-test
+    command: |
+      /bin/bash -c "
+        echo 'Testing seeksoulmethy image...' &&
+        echo 'Checking conda/micromamba:' &&
+        (micromamba --version || conda --version) &&
+        echo 'Checking environment:' &&
+        micromamba env list &&
+        echo 'Checking SeekSoulMethyl installation:' &&
+        ls -la /biocloud/SeekSoulMethyl &&
+        echo 'Seeksoulmethy image test completed successfully!'
+      "
+    profiles:
+      - test
+
+  # Development environment
+  dev-base:
+    build:
+      context: .
+      dockerfile: dockfile/Dockerfile
+    image: nf-rna-methy-pipe:base-dev
+    volumes:
+      - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /workspace
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    profiles:
+      - dev
+
+  dev-seeksoulmethy:
+    build:
+      context: .
+      dockerfile: dockfile/Dockerfile.env_seeksoulmethy
+    image: nf-rna-methy-pipe:seeksoulmethy-dev
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    environment:
+      - PATH=/opt/conda/envs/seeksoulmethyl/bin:$PATH
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    profiles:
+      - dev
