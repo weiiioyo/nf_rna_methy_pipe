@@ -14,10 +14,6 @@ The project includes the following GitHub Actions workflows:
    - Execute quality checks
    - Push images to GitHub Container Registry
 
-2. **Dockerfile Lint** (`.github/workflows/docker-lint.yml`)
-   - Check Dockerfile syntax using Hadolint
-   - Upload check results to GitHub Security tab
-
 ### Trigger Conditions
 
 Workflows are automatically triggered in the following cases:
