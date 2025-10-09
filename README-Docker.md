@@ -42,9 +42,6 @@ docker-compose -f docker-compose.test.yml --profile dev up -d dev-seeksoulmethy
 ### Manual Image Building
 
 ```bash
-# Build base image
-docker build -f dockfile/Dockerfile -t nf-rna-methy-pipe:base .
-
 # Build SeekSoulMethyl image
 docker build -f dockfile/Dockerfile.env_seeksoulmethy -t nf-rna-methy-pipe:seeksoulmethy .
 ```
@@ -57,14 +54,12 @@ docker build -f dockfile/Dockerfile.env_seeksoulmethy -t nf-rna-methy-pipe:seeks
 # Linux: Download binary or use Docker
 
 # Check Dockerfile
-hadolint dockfile/Dockerfile
 hadolint dockfile/Dockerfile.env_seeksoulmethy
 ```
 
 ## Image Registry
 
 Built images are automatically pushed to GitHub Container Registry:
-- `ghcr.io/[username]/nf-rna-methy-pipe:base`
 - `ghcr.io/[username]/nf-rna-methy-pipe:seeksoulmethy`
 
 ## Security Scanning
