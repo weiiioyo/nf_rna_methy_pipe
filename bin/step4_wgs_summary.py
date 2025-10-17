@@ -249,7 +249,7 @@ def get_total_cpg(allcfile: str, genome_total_cpg_file: str = None) -> dict:
             genome_total_cpg = next(iter(genome_info.values()))["total_cg_sites"]
     # Convert total_cpg / genome_total_cpg to percentage format %.2f
     cpg_methylation_rate = total_cpg / genome_total_cpg if genome_total_cpg > 0 else 0.0
-    return {"Total CPGs Detected": total_cpg, "CpG Coverage rate": f"{cpg_methylation_rate:.2f}%"}
+    return {"Total CPGs Detected": total_cpg, "CpG Coverage rate": cpg_methylation_rate}
 
 def parse_cell_info(cells_reads_csv: str, cells_allc_metric_csv: str) -> dict:
     """
@@ -313,8 +313,8 @@ def outcsv(outdir, samplename, summary_json, genome_info_json):
     rate_7fratio = float(summary["stat"]["rate_7f"])
     rate_17lmeratio = float(summary["stat"]["rate_17lme"])
     rate_7f17lmeratio = float(summary["stat"]["rate_7f17lme"])
-    conversion = float(summary["stat"]["ct_mean"])
-    cc_ratio = float(summary["stat"]["cc_mean"])
+    conversion = f'{float(summary["stat"]["ct_mean"]):.2%}'
+    cc_ratio = f'{float(summary["stat"]["cc_mean"]):.2%}'
     
     # Calculate new quality control metrics
     too_short = summary["stat"]["too_short"]
@@ -326,10 +326,10 @@ def outcsv(outdir, samplename, summary_json, genome_info_json):
     reverse_chimeric = summary["stat"].get("reverse_chimeric", 0)
     
     # Dropped_Too_Short: (valid-too_short)/total*100%
-    dropped_too_short_ratio = (vaildreads - too_short) / rawreads
+    dropped_too_short_ratio = too_short / rawreads
     
     # Dropped_Chimeric: (valid-too_short-forward_chimeric-reverse_chimeric)/total*100%
-    dropped_chimeric_ratio = (vaildreads - too_short - forward_chimeric - reverse_chimeric) / rawreads
+    dropped_chimeric_ratio = (forward_chimeric + reverse_chimeric) / (vaildreads - too_short)
     
     # Get methylation context metrics
     methylation_metrics = get_methylation_metrics(samplename, outdir)
@@ -358,7 +358,7 @@ def outcsv(outdir, samplename, summary_json, genome_info_json):
         summary["cells"] = {}
     summary["cells"].update(get_total_cpg(f"{step3_dir}/{samplename}_.CGN-Merge.allc.tsv.gz", genome_info_json))
     total_cpgs = summary["cells"]["Total CPGs Detected"]
-    cpg_coverage = f'{summary["cells"]["CpG Coverage rate"]}'
+    cpg_coverage = f'{summary["cells"]["CpG Coverage rate"]:.2%}'
     
     cell_info = parse_cell_info(
         f"{step3_dir}/filtered_barcode_reads_counts.csv",
