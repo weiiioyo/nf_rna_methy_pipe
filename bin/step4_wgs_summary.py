@@ -248,8 +248,8 @@ def get_total_cpg(allcfile: str, genome_total_cpg_file: str = None) -> dict:
             genome_info = json.load(f)
             genome_total_cpg = next(iter(genome_info.values()))["total_cg_sites"]
     # Convert total_cpg / genome_total_cpg to percentage format %.2f
-    cpg_methylation_rate = total_cpg / genome_total_cpg * 100 if genome_total_cpg > 0 else 0.0
-    return {"Total CPGs Detected": total_cpg, "CpG Coverage rate": cpg_methylation_rate}
+    cpg_methylation_rate = total_cpg / genome_total_cpg if genome_total_cpg > 0 else 0.0
+    return {"Total CPGs Detected": total_cpg, "CpG Coverage rate": f"{cpg_methylation_rate:.2f}%"}
 
 def parse_cell_info(cells_reads_csv: str, cells_allc_metric_csv: str) -> dict:
     """
