@@ -12,7 +12,7 @@ process SPLIT_BAM_FILES {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH 
+    set -e
     # Split BAM files
     step3_split_bams.py \
         --bam ${bismark_sortn_bam} \
@@ -38,8 +38,7 @@ process MERGE_BISMARK_BAM {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH
-    
+    set -e
     # Create output directory
     mkdir -p ${forward_split_bams_dir.baseName}_merged_fr_bam
 
@@ -96,7 +95,7 @@ process ALLCOOLS_BAM_TO_ALLC {
     
     script:
     """
-    export PATH=/PROJ/home/weiqiuxia/micromamba/envs/allcools_dev/bin:\$PATH       
+    set -e     
     # Run allcools to generate datasets
     step3_bam_to_allc.py \
         --indir ${sc_merged_bam_dir} \
@@ -125,11 +124,10 @@ process MERGE_FILTERED_BARCODE_READS_COUNTS {
 
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH   
+    set -e  
     cat *_merge_filtered_barcode > filtered_barcode
     awk '(NR==FNR){print}(NR!=FNR&&FNR!=1){print}' *_merge_filtered_barcode_reads_counts.csv > filtered_barcode_reads_counts.csv
     step3_merge_sc_metrics.py ./ -o ./${sample}_cells --cbcsv ${params.cbcsv}
-
     """
 }
 
@@ -146,7 +144,7 @@ process ALLCOOLS_GENERATE_DATASETS {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH       
+    set -e      
     ls */*_allc.gz | while read id; do
         barcode=`basename \${id%%_allc.gz}`;
         echo "\${barcode}\t\${id}" >> allc_file_path.txt
@@ -197,8 +195,9 @@ process ALLCOOLS_MERGE {
 
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH       
+    set -e     
     # Run allcools to merge datasets, about 12h
+    set -e
     ls */*_allc.gz > merge_list.txt
     allcools merge \
     --cpu ${task.cpus} \
@@ -222,7 +221,7 @@ process ALLCOOLS_EXTRACT {
 
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH       
+    set -e      
     # Run allcools to extract datasets, about 16 min
     allcools extract-allc \
     --cpu 1 \

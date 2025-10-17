@@ -12,8 +12,7 @@ process METHYLATION_SUMMARY {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH
-
+    set -e
     # Generate summary report
     step4_wgs_summary.py \
         --outdir . \
@@ -38,7 +37,7 @@ process METHYLATION_LSI_PCA_CLUSTERING {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH   
+    set -e 
     step4_allcools_PCA_cluster.py \
         --mcds_path ${mcds_file} \
         --samplename ${sample} \

@@ -1,8 +1,10 @@
 # Ignore configuration directory
 conf/
+config/
 
 # Ignore project directory
 project/
+test/
 
 # Common ignore patterns
 *.log

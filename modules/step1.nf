@@ -12,7 +12,7 @@ process COMPUTE_CPG_SITES {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH;    
+    set -e
     # Calculate CpG sites
     count_cg_sites.py ${params.genomefa} ${params.chrom_size_path} > genome_cg_info.json
     """
@@ -66,7 +66,7 @@ process MERGE_SAMPLE_DATA {
     [exp_r1_oss, exp_r2_oss, methy_r1_oss, methy_r2_oss].flatten().unique().each { oss_file ->
         if (oss_file) {
             download_oss_cmd += "echo 'Downloading ${oss_file}...'\n"
-            download_oss_cmd += "/PROJ2/development/weiqiuxia/software/ossutil64 cp -c ${params.script_path}/.ossutilconfig ${oss_file} .\n"
+            download_oss_cmd += "/PROJ2/development/weiqiuxia/software/ossutil64 cp -c ${projectDir}/bin/.ossutilconfig ${oss_file} .\n"
             download_oss_cmd += "if [ \$? -eq 0 ]; then echo '✓ Downloaded ${oss_file}'; else echo '✗ Failed to download ${oss_file}'; exit 1; fi\n"
         }
     }
@@ -114,7 +114,7 @@ process MERGE_SAMPLE_DATA {
         "touch ${sample}_merged_methylation_R1.fastq.gz" : 
         (methy_r1_all.size() > 1 ? 
             "merge_fastq_files.py --force-single-end -i ${methy_r1_all.join(' ')} -o ${sample}_merged_methylation_R1.fastq.gz" : 
-            "mv ${methy_r1_all[0]} ${sample}_merged_methylation_R1.fastq.gz")
+            "ln -s `pwd`/${methy_r1_all[0]} ${sample}_merged_methylation_R1.fastq.gz")
     
     // Process methylation data R2
     def methy_r2_all = []
@@ -127,15 +127,15 @@ process MERGE_SAMPLE_DATA {
         "touch ${sample}_merged_methylation_R2.fastq.gz" : 
         (methy_r2_all.size() > 1 ? 
             "merge_fastq_files.py --force-single-end -i ${methy_r2_all.join(' ')} -o ${sample}_merged_methylation_R2.fastq.gz" : 
-            "mv ${methy_r2_all[0]} ${sample}_merged_methylation_R2.fastq.gz")
+            "ln -s `pwd`/${methy_r2_all[0]} ${sample}_merged_methylation_R2.fastq.gz")
     
     """
+    set -e
     echo "Starting parallel data merging for sample: ${sample}"
     echo "Expression R1 files: ${exp_r1_files.size()}"
     echo "Expression R2 files: ${exp_r2_files.size()}"
     echo "Methylation R1 files: ${methy_r1_files.size()}"
     echo "Methylation R2 files: ${methy_r2_files.size()}"
-    export PATH=${params.seeksoultools_path}/bin:\$PATH;
     # Download OSS files
     if [ -n "${download_oss_cmd}" ]; then
         echo "Downloading OSS files..."
@@ -203,7 +203,7 @@ process FASTP_EXPRESSION {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH;
+    set -e 
     fastp \
         -i ${exp_r1} \
         -I ${exp_r2} \
@@ -232,7 +232,7 @@ process FASTP_METHYLATION {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH;
+    set -e
     fastp \
         -i ${methy_r1} \
         -I ${methy_r2} \
@@ -263,8 +263,7 @@ process SEEKSOULTOOLS_RNA {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH
-    
+    set -e
     seeksoultools rna run \
         --samplename ${sample} \
         --fq1 ${exp_clean_r1} \
@@ -283,20 +282,16 @@ process SEEKSOULTOOLS_RNA {
 process METHYLATION_BARCODE_EXTRACTION {
     tag "$sample-METHYLATION_BARCODE_EXTRACTION"
     publishDir "${params.outdir}/${sample}_methy/"
-    cpus 32
-    memory '40 GB'
     
     input:
     tuple val(sample),  path(methy_clean_r1), path(methy_clean_r2)
     
     output:
     tuple val(sample), path("step1/${sample}_forward_*_1.fq.gz"), path("step1/${sample}_forward_*_2.fq.gz"), path("step1/${sample}_reverse_*_1.fq.gz"), path("step1/${sample}_reverse_*_2.fq.gz"), path("${sample}_summary.json"), emit: methy_barcode_output
-    path('step1')
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH
-    
+    set -e
     # Barcode extraction and secondary quality control
     barcode_cs_multi.py \
         --fq1 ${methy_clean_r1} \
@@ -314,7 +309,7 @@ process METHYLATION_BARCODE_EXTRACTION {
 // Parse and group fastq files - pair based on identifiers
 process PARSE_FASTQ_FILES {
     tag "$sample-PARSE_FASTQ_FILES"
-    publishDir "${params.outdir}/${sample}_methy/step1/", mode: "copy"
+    publishDir "${params.outdir}/${sample}_methy/"
     
     input:
     tuple val(sample), path(forward_r1_files), path(forward_r2_files), path(reverse_r1_files), path(reverse_r2_files), path(summary_json)
@@ -325,6 +320,7 @@ process PARSE_FASTQ_FILES {
     
     script:
     """
+    set -e
     # Create forward file pair list - pair based on identifiers
     echo "Creating forward pairs based on identifiers..."
     
@@ -387,6 +383,7 @@ process CREATE_FORWARD_PAIRS {
     
     script:
     """
+    set -e
     # Read pairs file and output each pair as tab-separated values
     while IFS=',' read -r r1_file r2_file; do
         if [ -n "\$r1_file" ] && [ -n "\$r2_file" ]; then
@@ -410,6 +407,7 @@ process CREATE_REVERSE_PAIRS {
     
     script:
     """
+    set -e
     # Read pairs file and output each pair as tab-separated values
     while IFS=',' read -r r1_file r2_file; do
         if [ -n "\$r1_file" ] && [ -n "\$r2_file" ]; then
@@ -434,12 +432,10 @@ process FASTP_METHYLATION_BARCODE_EXTRACT {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH;
+    set -e
     fastp \
         -i ${methy_barcode_r1} \
         -I ${methy_barcode_r2} \
-        -o ${methy_barcode_r1.baseName}_fastp.fq.gz \
-        -O ${methy_barcode_r2.baseName}_fastp.fq.gz \
         -w ${task.cpus} \
         -h ${methy_barcode_r1.baseName}_fastp.html \
         -j ${methy_barcode_r1.baseName}_fastp.json \

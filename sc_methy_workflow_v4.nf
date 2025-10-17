@@ -228,6 +228,21 @@ workflow {
     //forward_pairs_raw.view()
     //reverse_pairs_raw.view()
     // Process stdout output, convert multi-line strings to individual tuples
+    // Calculate pair counts per sample for dynamic size in groupTuple operations
+    pair_counts_per_sample = forward_pairs_raw
+        .map { sample, stdout_content ->
+            def count = 0
+            stdout_content.split('\n').each { line ->
+                if (line.trim()) {
+                    def parts = line.split(',')
+                    if (parts.size() == 4) {
+                        count++
+                    }
+                }
+            }
+            return tuple(sample, count)
+        }
+    
     forward_pairs = forward_pairs_raw
         .map { sample, stdout_content ->
             def pairs = []
@@ -301,52 +316,95 @@ workflow {
         .combine(sc_bismark_merge_bam.merged_filtered_barcode, by: [0,1]))
     
     
-    // Merge filtered barcode reads counts
+    // Merge filtered barcode reads counts - 按样本聚合，样本间并行
     merged_counts = MERGE_FILTERED_BARCODE_READS_COUNTS(
     sc_bismark_merge_bam.merged_filtered_barcode
-    .groupTuple(by: 0)
-    .map {it -> tuple(it[0], it[2])}
+    .combine(pair_counts_per_sample, by: 0)
+    .map { sample_id, pair_id, barcode_data, pair_count -> 
+        tuple(groupKey(sample_id, pair_count), barcode_data)
+    }
+    .groupTuple()
+    .map { group_key, barcode_list -> 
+        tuple(group_key.toString(), barcode_list)
+    }
     .combine(
         sc_bismark_merge_bam.merged_filtered_barcode_reads_counts
-        .groupTuple(by: 0)
-        .map {it -> tuple(it[0], it[2])},
-    by :0)
+        .combine(pair_counts_per_sample, by: 0)
+        .map { sample_id, pair_id, reads_data, pair_count -> 
+            tuple(groupKey(sample_id, pair_count), reads_data)
+        }
+        .groupTuple()
+        .map { group_key, reads_list -> 
+            tuple(group_key.toString(), reads_list)
+        },
+    by: 0)
     .combine(
         allc_generated.allcools_allc_output
-        .groupTuple(by: 0)
-        .map {it -> tuple(it[0], it[2])}, by:0)
+        .combine(pair_counts_per_sample, by: 0)
+        .map { sample_id, pair_id, allc_data, pair_count -> 
+            tuple(groupKey(sample_id, pair_count), allc_data)
+        }
+        .groupTuple()
+        .map { group_key, allc_list -> 
+            tuple(group_key.toString(), allc_list)
+        }, by: 0)
     )
     
     
     // Run allcools generate datasets
     allcools_datasets = ALLCOOLS_GENERATE_DATASETS(
-        allc_generated.allcools_allc_output.groupTuple(by: 0)
-        .map {it -> tuple(it[0], it[2])}
+        allc_generated.allcools_allc_output
+        .combine(pair_counts_per_sample, by: 0)
+        .map { sample_id, pair_id, allc_data, pair_count -> 
+            tuple(groupKey(sample_id, pair_count), allc_data)
+        }
+        .groupTuple()
+        .map { group_key, allc_list -> 
+            tuple(group_key.toString(), allc_list)
+        }
         .combine(
         merged_counts.merged_filtered_barcode_reads_counts
         .map{it -> tuple(it[0], it[1])}, by: 0))
     
     // Run allcools merge datasets
     allcools_merged = ALLCOOLS_MERGE(allc_generated.allcools_allc_output
-        .groupTuple(by: 0)
-        .map {it -> tuple(it[0], it[2])})
+        .combine(pair_counts_per_sample, by: 0)
+        .map { sample_id, pair_id, allc_data, pair_count -> 
+            tuple(groupKey(sample_id, pair_count), allc_data)
+        }
+        .groupTuple()
+        .map { group_key, allc_list -> 
+            tuple(group_key.toString(), allc_list)
+        })
     
     // Run allcools extract datasets
     allcools_extracted = ALLCOOLS_EXTRACT(allcools_merged.allcools_merge_allc)
     // Generate methylation summary report
     methylation_summary = METHYLATION_SUMMARY(
         bismark_aligned_forward.bismark_forward_report
-        .groupTuple(by: 0)
-        .map {it -> tuple(it[0], it[2])}
+        .combine(pair_counts_per_sample, by: 0)
+        .map { sample_id, pair_id, report_data, pair_count -> 
+            tuple(groupKey(sample_id, pair_count), report_data)
+        }
+        .groupTuple()
+        .map { group_key, report_list -> 
+            tuple(group_key.toString(), report_list)
+        }
         .combine(
-            bismark_aligned_reverse.bismark_reverse_report
-            .groupTuple(by: 0)
-            .map {it -> tuple(it[0], it[2])}, by: 0)
+        bismark_aligned_reverse.bismark_reverse_report
+        .combine(pair_counts_per_sample, by: 0)
+        .map { sample_id, pair_id, report_data, pair_count -> 
+            tuple(groupKey(sample_id, pair_count), report_data)
+        }
+        .groupTuple()
+        .map { group_key, report_list -> 
+            tuple(group_key.toString(), report_list)
+        }, by: 0)
         .combine(merged_counts.allcools_cells_csv_output, by: 0)
         .combine(merged_counts.merged_filtered_barcode_reads_counts, by: 0)
         .combine(methy_barcode.methy_barcode_output.map {it -> tuple(it[0], it.last())}, by: 0)
         .combine(allcools_extracted.allcools_extract_allc_output, by: 0)
-        .merge(cpg_sites.cpg_sites))
+        .combine(cpg_sites.cpg_sites))
     
     // PCA clustering analysis
     pca_clustering = METHYLATION_LSI_PCA_CLUSTERING(

@@ -13,7 +13,7 @@ process BISMARK_ALIGNMENT_FORWARD {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH    
+    set -e   
     # Bismark alignment
     /PROJ2/FLOAT/weiqiuxia/software/Bismark/bismark \
         --genome ${params.bismark_ref} \
@@ -41,7 +41,7 @@ process BISMARK_ALIGNMENT_REVERSE {
     
     script:
     """
-    export PATH=${params.seeksoultools_path}/bin:\$PATH    
+    set -e    
     # Bismark alignment
     /PROJ2/FLOAT/weiqiuxia/software/Bismark/bismark \
         --genome ${params.bismark_ref} \
@@ -70,8 +70,8 @@ process SORT_BAM_BY_NAME {
     
     script:
     """
+    set -e
     # Sort by read name
-    export PATH=${params.seeksoultools_path}/bin:\$PATH
     samtools sort \
         -n -@ ${task.cpus} \
         -o ${bismark_bam.baseName}_sortbyname.bam \
