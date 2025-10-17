@@ -15,6 +15,7 @@ test/
 .DS_Store
 Thumbs.db
 .ossutilconfig
+recode.md
 
 # Nextflow specific
 .nextflow/
@@ -26,6 +27,8 @@ trace-*.txt
 report-*.html
 timeline-*.html
 dag-*.html
+main_retry_spot.nf
+nextflow.config
 
 # Python
 __pycache__/
