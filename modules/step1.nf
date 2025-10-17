@@ -88,7 +88,7 @@ process MERGE_SAMPLE_DATA {
         "touch ${sample}_merged_expression_R1.fastq.gz" : 
         (exp_r1_all.size() > 1 ? 
             "merge_fastq_files.py --force-single-end -i ${exp_r1_all.join(' ')} -o ${sample}_merged_expression_R1.fastq.gz" : 
-            "mv ${exp_r1_all[0]} ${sample}_merged_expression_R1.fastq.gz")
+            "ln -s  ${exp_r1_all[0]} ${sample}_merged_expression_R1.fastq.gz")
     
     // Process expression data R2
     def exp_r2_all = []
@@ -101,7 +101,7 @@ process MERGE_SAMPLE_DATA {
         "touch ${sample}_merged_expression_R2.fastq.gz" : 
         (exp_r2_all.size() > 1 ? 
             "merge_fastq_files.py --force-single-end -i ${exp_r2_all.join(' ')} -o ${sample}_merged_expression_R2.fastq.gz" : 
-            "mv ${exp_r2_all[0]} ${sample}_merged_expression_R2.fastq.gz")
+            "ln -s ${exp_r2_all[0]} ${sample}_merged_expression_R2.fastq.gz")
     
     // Process methylation data R1
     def methy_r1_all = []
@@ -114,7 +114,7 @@ process MERGE_SAMPLE_DATA {
         "touch ${sample}_merged_methylation_R1.fastq.gz" : 
         (methy_r1_all.size() > 1 ? 
             "merge_fastq_files.py --force-single-end -i ${methy_r1_all.join(' ')} -o ${sample}_merged_methylation_R1.fastq.gz" : 
-            "ln -s `pwd`/${methy_r1_all[0]} ${sample}_merged_methylation_R1.fastq.gz")
+            "ln -s ${methy_r1_all[0]} ${sample}_merged_methylation_R1.fastq.gz")
     
     // Process methylation data R2
     def methy_r2_all = []
@@ -127,7 +127,7 @@ process MERGE_SAMPLE_DATA {
         "touch ${sample}_merged_methylation_R2.fastq.gz" : 
         (methy_r2_all.size() > 1 ? 
             "merge_fastq_files.py --force-single-end -i ${methy_r2_all.join(' ')} -o ${sample}_merged_methylation_R2.fastq.gz" : 
-            "ln -s `pwd`/${methy_r2_all[0]} ${sample}_merged_methylation_R2.fastq.gz")
+            "ln -s ${methy_r2_all[0]} ${sample}_merged_methylation_R2.fastq.gz")
     
     """
     set -e
