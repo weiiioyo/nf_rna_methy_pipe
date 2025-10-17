@@ -66,7 +66,7 @@ process MERGE_SAMPLE_DATA {
     [exp_r1_oss, exp_r2_oss, methy_r1_oss, methy_r2_oss].flatten().unique().each { oss_file ->
         if (oss_file) {
             download_oss_cmd += "echo 'Downloading ${oss_file}...'\n"
-            download_oss_cmd += "ossutil cp -c ${projectDir}/bin/.ossutilconfig ${oss_file} .\n"
+            download_oss_cmd += "ossutil cp --sign-version v4 --region cn-beijing -c ${projectDir}/bin/.ossutilconfig ${oss_file} .\n"
             download_oss_cmd += "if [ \$? -eq 0 ]; then echo '✓ Downloaded ${oss_file}'; else echo '✗ Failed to download ${oss_file}'; exit 1; fi\n"
         }
     }
