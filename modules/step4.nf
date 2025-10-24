@@ -8,7 +8,7 @@ process METHYLATION_SUMMARY {
     path(filtered_barcode),path(filtered_barcode_reads_counts), path(summary_json), path(allcools_extract_allc), path(cpg_sites)
     
     output:
-    tuple val(sample), path("${sample}_summary.json"), path("${sample}_wgs_summary.csv")
+    tuple val(sample), path("${sample}_methy_summary.json"), path("${sample}_wgs_summary.csv")
     
     script:
     """
@@ -17,7 +17,7 @@ process METHYLATION_SUMMARY {
     step4_wgs_summary.py \
         --outdir . \
         --samplename ${sample} \
-        --summary_json ${sample}_summary.json \
+        --summary_json ${sample}_methy_summary.json \
         --genome_info_json ${cpg_sites}
     """
 }
@@ -25,7 +25,7 @@ process METHYLATION_SUMMARY {
 // LSI or PCA reduction and clustering analysis
 process METHYLATION_LSI_PCA_CLUSTERING {
     tag "$sample"
-    publishDir "${params.outdir}/${sample}_methy/step4"
+    publishDir "${params.outdir}/${sample}_methy/step4/", mode: "copy"
     
     input:
     tuple val(sample), path(mcds_file), path(filtered_barcode)

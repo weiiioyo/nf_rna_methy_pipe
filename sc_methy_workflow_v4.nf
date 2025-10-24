@@ -15,10 +15,6 @@ params.samplesheet = null
 // Output directory
 params.outdir = "./results"
     
-// Tool paths
-params.seeksoultools_path = "/PROJ/home/weiqiuxia/micromamba/envs/seeksoulmethyl/"
-params.script_path = "/PROJ2/FLOAT/weiqiuxia/project/20241227_methy/script/nf_rna_methy_pip/script"
-    
 // Database file paths
 params.database_dir = "/PROJ2/FLOAT/maxingyong/development/sc_methy/database_v1/refdata-cellranger-arc-GRCh38-2024-A"
 params.genomeDir = "${params.database_dir}/star"
@@ -34,7 +30,7 @@ if (params.chemistry == "DD-M") {
 }else if (params.chemistry == "ME5") {
     params.exp_chemistry = "ME5"
 }
-params.split_fastq = 2
+params.split_fastq = 4
 params.filter_ch = 2
 // Help information
 params.help = false

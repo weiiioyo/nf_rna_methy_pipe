@@ -387,8 +387,8 @@ def outcsv(outdir, samplename, summary_json, genome_info_json):
     cellnum = f'{summary["cells"]["Estimated Number of Cells"]}'
     summary["cells"]["Fraction Reads in Cells"] = summary["cells"]["Reads in Cells"] / summary["mapping"]["uniquereads"]
     fraction = f'{summary["cells"]["Fraction Reads in Cells"]:.2%}' 
-    
-
+    with open(summary_json, 'w') as fh:
+        json.dump(summary, fh, indent=4)
 
     header=('Samplename,Estimated_Number_of_Cells,Number_of_Reads,Valid_Barcode_Ratio,Dropped_Too_Short,Dropped_Chimeric,Valid_7F_Reads_Rate,Valid_17LME_Reads_Rate,Valid_7F17LME_Reads_Rate,C-T_Conversion,C-C_Ratio,'
             'Reads_Mapped_to_Genome,Reads_Mapped_Confidently_to_Genome,CpG_Methylation_Rate,CHG_Methylation_Rate,CHH_Methylation_Rate,Unknown_Methylation_Rate,CpG_Coverage_Rate,'
@@ -429,6 +429,6 @@ def outcsv(outdir, samplename, summary_json, genome_info_json):
     with open(os.path.join(outdir, f'{samplename}_wgs_summary.csv'), 'w') as fh:
         fh.write(header + '\n')
         fh.write(','.join(str(_).replace(',', '') for _ in summary_data)+ '\n')
-
+        
 if __name__ == "__main__":
     outcsv()

@@ -231,6 +231,7 @@ process FASTP_METHYLATION {
     path "*.{html,json}"
     
     script:
+    def cores = Math.max(1, task.cpus - 2)
     """
     set -e
     fastp \
@@ -238,7 +239,7 @@ process FASTP_METHYLATION {
         -I ${methy_r2} \
         -o ${sample}_methylation_clean_R1.fastq.gz \
         -O ${sample}_methylation_clean_R2.fastq.gz \
-        -w ${task.cpus} \
+        -w ${cores} \
         -h ${sample}_methylation_fastp.html \
         -j ${sample}_methylation_fastp.json \
         --disable_adapter_trimming \
@@ -259,9 +260,11 @@ process SEEKSOULTOOLS_RNA {
     
     output:
     tuple val(sample), path("${sample}/Analysis/step3/filtered_feature_bc_matrix/barcodes.tsv.gz"), emit: gex_barcodes
-    path "${sample}"
+    path "${sample}/Analysis/${sample}_gex_summary.json", emit: gex_summary_json
+    path ""
     
     script:
+    def cores = Math.max(1, task.cpus - 2)
     """
     set -e
     seeksoultools rna run \
@@ -269,11 +272,14 @@ process SEEKSOULTOOLS_RNA {
         --fq1 ${exp_clean_r1} \
         --fq2 ${exp_clean_r2} \
         --outdir . \
-        --core ${task.cpus} \
+        --core ${cores} \
         --chemistry ${params.exp_chemistry} \
         --include-introns \
         --gtf ${params.gtf} \
         --genomeDir ${params.genomeDir}
+    rm -rf ${sample}/Analysis/.test
+    rm -rf ${sample}/Analysis/step2/STAR/*__STARtmp
+    mv ${sample}/Analysis/${sample}_summary.json ${sample}/Analysis/${sample}_gex_summary.json
 
     """
 }
@@ -287,22 +293,23 @@ process METHYLATION_BARCODE_EXTRACTION {
     tuple val(sample),  path(methy_clean_r1), path(methy_clean_r2)
     
     output:
-    tuple val(sample), path("step1/${sample}_forward_*_1.fq.gz"), path("step1/${sample}_forward_*_2.fq.gz"), path("step1/${sample}_reverse_*_1.fq.gz"), path("step1/${sample}_reverse_*_2.fq.gz"), path("${sample}_summary.json"), emit: methy_barcode_output
+    tuple val(sample), path("step1/${sample}_forward_*_1.fq.gz"), path("step1/${sample}_forward_*_2.fq.gz"), path("step1/${sample}_reverse_*_1.fq.gz"), path("step1/${sample}_reverse_*_2.fq.gz"), path("${sample}_methy_summary.json"), emit: methy_barcode_output
     
     script:
+    def cores = Math.max(1, task.cpus - 2)
     """
     set -e
-    # Barcode extraction and secondary quality control
     barcode_cs_multi.py \
         --fq1 ${methy_clean_r1} \
         --fq2 ${methy_clean_r2} \
-        --barcode ${params.script_path}/barcodes/U3CB_methylation.txt \
+        --barcode ${params.methy_barcode_wl} \
         --outdir . \
         --samplename ${sample} \
-        --core ${task.cpus} \
+        --core ${cores} \
         --chemistry ${params.chemistry} \
         --filter_ch ${params.filter_ch} \
         --split_fastq ${params.split_fastq}
+    mv "${sample}_summary.json" "${sample}_methy_summary.json"
     """
 }
 
