@@ -350,7 +350,6 @@ def report(gexjson, metjson,
     data_summary["tsne"]["data"]["CpG_number"] = [ int(i) for i in MET_Total_CpG_number ]
     data_summary["tsne"]["data"]["CpG_methylation"] = [ round(i,2) for i in CpG_methylation_level ]
     data_summary["tsne"]["data"]["CH_methylation"] = [ round(i,2) for i in CH_methylation_level ]
-    data_summary["tsne"]["data"]["Geomone_coverage"] = [ round(i*100,2) for i in Genome_coverage ]
     
     data_summary["tsne"]["data"]["range"]["nCount_RNA"] = [ int(min(gex_nCount_RNA)), int(max(gex_nCount_RNA)) ]
     data_summary["tsne"]["data"]["range"]["nFeature_RNA"] = [ int(min(gex_nFeature_RNA)), int(max(gex_nFeature_RNA)) ]
@@ -360,7 +359,6 @@ def report(gexjson, metjson,
     data_summary["tsne"]["data"]["range"]["CpG_number"] = [ int(min(MET_Total_CpG_number)), int(max(MET_Total_CpG_number)) ]
     data_summary["tsne"]["data"]["range"]["CpG_methylation"] = [ round(min(CpG_methylation_level),2), round(max(CpG_methylation_level),2) ]
     data_summary["tsne"]["data"]["range"]["CH_methylation"] = [ round(min(CH_methylation_level),2), round(max(CH_methylation_level),2) ]
-    data_summary["tsne"]["data"]["range"]["Geomone_coverage"] = [ round(min([ i* 100 for i in Genome_coverage ]),2), round(max([ i* 100 for i in Genome_coverage ]),4) ]
 
     # rna: title
     data_summary["RNA"][0]["left"][0]["data"]["Estimated number of cells"] = f'{df.shape[0]:,}'
@@ -425,22 +423,23 @@ def report(gexjson, metjson,
     data_summary["MET"][1]["right"][0]["data"]["CHG Methylation Rate"] = f'{round(met_summary["chg_methylation_rate"],2)}%'
     data_summary["MET"][1]["right"][0]["data"]["CHH Methylation Rate"] = f'{round(met_summary["chh_methylation_rate"],2)}%'
     data_summary["MET"][1]["right"][0]["data"]["CpG Coverage Rate"] = f'{met_summary["cells"]["CpG Coverage rate"]:.2%}'
-    data_summary["MET"][1]["right"][0]["data"]["Total CPGs Detected"] = f'{met_summary["cells"]["Total CPGs Detected"]:,}'
+    data_summary["MET"][1]["right"][0]["data"]["Total CpGs Detected"] = f'{met_summary["cells"]["Total CPGs Detected"]:,}'
     
     data_summary["MET"][2]["left"][0]["data"]["Estimated Number of Cells"] = f'{met_summary["cells"]["Estimated Number of Cells"]:,}'
     data_summary["MET"][2]["left"][0]["data"]["Genome Coverage Rate of Max Cell"] = f'{met_summary["cells"]["Genome Coverage rate of max cell"]:.2%}'
-    data_summary["MET"][2]["left"][0]["data"]["CPGs of Max Cell"] = f'{int(met_summary["cells"]["CPGs of max cell"]):,}'
+    data_summary["MET"][2]["left"][0]["data"]["CpGs of Max Cell"] = f'{int(met_summary["cells"]["CPGs of max cell"]):,}'
     data_summary["MET"][2]["left"][0]["data"]["Reads of Max Cell"] = f'{int(met_summary["cells"]["Reads of max cell"]):,}'
     data_summary["MET"][2]["left"][0]["data"]["Saturation of Max Cell"] = f'{met_summary["cells"]["Saturation of max cell"]:.2%}'
     data_summary["MET"][2]["left"][0]["data"]["Genome Coverage Rate of Median Cell"] = f'{met_summary["cells"]["Genome Coverage rate of median cell"]:.2%}'
-    data_summary["MET"][2]["left"][0]["data"]["CPGs of Median Cell"] = f'{int(met_summary["cells"]["CPGs of median cell"]):,}'
+    data_summary["MET"][2]["left"][0]["data"]["CpGs of Median Cell"] = f'{int(met_summary["cells"]["CPGs of median cell"]):,}'
     data_summary["MET"][2]["left"][0]["data"]["Reads of Median Cell"] = f'{int(met_summary["cells"]["Reads of median cell"]):,}'
     data_summary["MET"][2]["left"][0]["data"]["Saturation of Median Cell"] = f'{met_summary["cells"]["Saturation of median cell"]:.2%}'
     data_summary["MET"][2]["left"][0]["data"]["Fraction Reads in Cells"] = f'{met_summary["cells"]["Fraction Reads in Cells"]:.2%}' 
+    data_summary["MET"][2]["right"][0]["data"]["y"] = [ round(i*100, 2) for i in df["cell_saturation"].tolist()]
     
-    data_summary["MET"][3]["left"][0]["data"]["y"] = [ round(i*100, 2) for i in df["cell_saturation"].tolist()]
-    data_summary["MET"][3]["right"][0]["data"]["x"] = df["reads_counts"].tolist()
-    data_summary["MET"][3]["right"][0]["data"]["y"] = df["total_cpg_number"].tolist()
+    data_summary["MET"][3]["left"][0]["data"]["y"] = [ round(i*100,2) for i in Genome_coverage ]
+    data_summary["MET"][3]["right"][0]["data"]["x"] = np.log10(df["reads_counts"] + 1).round(4).tolist()
+    data_summary["MET"][3]["right"][0]["data"]["y"] = np.log10(df["total_cpg_number"] + 1).round(4).tolist()
     
     with open(os.path.join(outdir, f'{samplename}_rna_met.json'), 'w') as fh:
         json.dump(data_summary, fh, indent = 4)
