@@ -287,13 +287,13 @@ def parse_cell_info(cells_reads_csv: str, cells_allc_metric_csv: str) -> dict:
         "Estimated Number of Cells": cells_reads.shape[0],
         "Genome Coverage rate of max cell": max_genome_cov,
         "Saturation of max cell": max_cell_saturation,
-        "CPGs of max cell": max_total_cpg_number,
-        "Reads of max cell": max_reads_counts,
+        "CPGs of max cell": int(max_total_cpg_number),
+        "Reads of max cell": int(max_reads_counts),
         "Genome Coverage rate of median cell": median_genome_cov,
         "Saturation of median cell": median_cell_saturation,
-        "CPGs of median cell": median_total_cpg_number,
-        "Reads of median cell": median_reads_counts,
-        "Reads in Cells": sum(cells_reads["reads_counts"])  # Default value, should be calculated elsewhere
+        "CPGs of median cell": int(median_total_cpg_number),
+        "Reads of median cell": int(median_reads_counts),
+        "Reads in Cells": int(sum(cells_reads["reads_counts"]))  # Default value, should be calculated elsewhere
     }
     return cell_info
 

@@ -95,7 +95,8 @@ include {
 
 include {
     METHYLATION_SUMMARY;
-    METHYLATION_LSI_PCA_CLUSTERING
+    METHYLATION_LSI_PCA_CLUSTERING;
+    MULTI_REPORT
 } from './modules/step4'
 
 // Create input channel
@@ -409,6 +410,17 @@ workflow {
             merged_counts.merged_filtered_barcode_reads_counts
             .map{it -> tuple(it[0], it[1])}, by: 0))
     
+    // Multi-report
+    multi_report = MULTI_REPORT(
+       rna_results.gex_summary_json
+       .combine(rna_results.filtered_dir, by: 0)
+       .combine(rna_results.raw_dir, by: 0)
+       .combine(rna_results.tsne_umi, by: 0)
+       .combine(rna_results.diff_data, by: 0)
+       .combine(methylation_summary.methy_summary.map {it -> tuple(it[0], it[1])}, by: 0)
+       .combine(merged_counts.merged_filtered_barcode_reads_counts.map {it -> tuple(it[0], it[2])}, by: 0)
+       .combine(merged_counts.allcools_cells_csv_output, by: 0)
+    )
     
 }
 

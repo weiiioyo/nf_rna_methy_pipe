@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import json
 import os
 from jinja2 import Environment, FileSystemLoader
@@ -271,7 +272,7 @@ def get_gex_tsne(tsnefile):
 @click.option('--tsne_file', required=True, help='Path to the tSNE file.')
 @click.option('--filtered_counts_file', required=True, help='Path to the filtered counts file.')
 @click.option('--cells_file', required=True, help='Path to the cells file.')
-@click.option('--whitelist_file', required=True, help='Path to the whitelist file.')
+@click.option('--whitelist_file', required=False, help='Path to the whitelist file.')
 @click.option('--outdir', required=True, help='Path to the output directory.')
 @click.option('--samplename', required=True, help='Sample name.')
 @click.option('--rawname', required=True, help='Raw name.')
@@ -280,9 +281,9 @@ def get_gex_tsne(tsnefile):
 @click.option('--filtered_dir', required=True, help='Path to the filtered directory.')
 @click.option('--diff_data', required=True, help='Path to the diff data file.')
 def report(gexjson, metjson, 
-           tsne_file, filtered_counts_file, cells_file, whitelist_file, 
+           tsne_file, filtered_counts_file, cells_file, 
            outdir, samplename, rawname, nf_config, 
-           raw_dir, filtered_dir, diff_data,
+           raw_dir, filtered_dir, diff_data, whitelist_file=None,
            **kwargs):
     os.makedirs(outdir, exist_ok=True)
     datajson = os.path.join(os.path.dirname(__file__), './utils/report_rna_met/sgrnamet.json')
@@ -428,12 +429,12 @@ def report(gexjson, metjson,
     
     data_summary["MET"][2]["left"][0]["data"]["Estimated Number of Cells"] = f'{met_summary["cells"]["Estimated Number of Cells"]:,}'
     data_summary["MET"][2]["left"][0]["data"]["Genome Coverage Rate of Max Cell"] = f'{met_summary["cells"]["Genome Coverage rate of max cell"]:.2%}'
-    data_summary["MET"][2]["left"][0]["data"]["CPGs of Max Cell"] = f'{met_summary["cells"]["CPGs of max cell"]:,}'
-    data_summary["MET"][2]["left"][0]["data"]["Reads of Max Cell"] = f'{met_summary["cells"]["Reads of max cell"]:,}'
+    data_summary["MET"][2]["left"][0]["data"]["CPGs of Max Cell"] = f'{int(met_summary["cells"]["CPGs of max cell"]):,}'
+    data_summary["MET"][2]["left"][0]["data"]["Reads of Max Cell"] = f'{int(met_summary["cells"]["Reads of max cell"]):,}'
     data_summary["MET"][2]["left"][0]["data"]["Saturation of Max Cell"] = f'{met_summary["cells"]["Saturation of max cell"]:.2%}'
     data_summary["MET"][2]["left"][0]["data"]["Genome Coverage Rate of Median Cell"] = f'{met_summary["cells"]["Genome Coverage rate of median cell"]:.2%}'
-    data_summary["MET"][2]["left"][0]["data"]["CPGs of Median Cell"] = f'{met_summary["cells"]["CPGs of median cell"]:,}'
-    data_summary["MET"][2]["left"][0]["data"]["Reads of Median Cell"] = f'{met_summary["cells"]["Reads of median cell"]:,}'
+    data_summary["MET"][2]["left"][0]["data"]["CPGs of Median Cell"] = f'{int(met_summary["cells"]["CPGs of median cell"]):,}'
+    data_summary["MET"][2]["left"][0]["data"]["Reads of Median Cell"] = f'{int(met_summary["cells"]["Reads of median cell"]):,}'
     data_summary["MET"][2]["left"][0]["data"]["Saturation of Median Cell"] = f'{met_summary["cells"]["Saturation of median cell"]:.2%}'
     data_summary["MET"][2]["left"][0]["data"]["Fraction Reads in Cells"] = f'{met_summary["cells"]["Fraction Reads in Cells"]:.2%}' 
     
@@ -447,7 +448,7 @@ def report(gexjson, metjson,
     template_dir_new = os.path.abspath(os.path.join(os.path.dirname(__file__), './utils/report_rna_met'))
     env = Environment(loader=FileSystemLoader(template_dir_new))
     template = env.get_template('base.html')
-    with open(os.path.join(outdir, f'{samplename}_report.html'), 'w') as fh:
+    with open(os.path.join(outdir, f'{samplename}_rna_methyl_report.html'), 'w') as fh:
         fh.write(template.render(websummary_json_data=json.dumps(data_summary).replace("5'", "5\\'").replace("3'", "3\\'")))
 
 if __name__ == "__main__":

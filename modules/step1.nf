@@ -260,8 +260,11 @@ process SEEKSOULTOOLS_RNA {
     
     output:
     tuple val(sample), path("${sample}/Analysis/step3/filtered_feature_bc_matrix/barcodes.tsv.gz"), emit: gex_barcodes
-    path "${sample}/Analysis/${sample}_gex_summary.json", emit: gex_summary_json
-    path ""
+    tuple val(sample), path("${sample}/Analysis/${sample}_gex_summary.json"), emit: gex_summary_json
+    tuple val(sample), path("${sample}/Analysis/step3/filtered_feature_bc_matrix"), emit: filtered_dir
+    tuple val(sample), path("${sample}/Analysis/step3/raw_feature_bc_matrix"), emit: raw_dir
+    tuple val(sample), path("${sample}/Analysis/step4/tsne_umi.xls"), emit: tsne_umi
+    tuple val(sample), path("${sample}/Analysis/step4/FindAllMarkers.xls"), emit:diff_data
     
     script:
     def cores = Math.max(1, task.cpus - 2)
