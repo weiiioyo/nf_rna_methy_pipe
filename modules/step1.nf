@@ -265,6 +265,7 @@ process SEEKSOULTOOLS_RNA {
     tuple val(sample), path("${sample}/Analysis/step3/raw_feature_bc_matrix"), emit: raw_dir
     tuple val(sample), path("${sample}/Analysis/step4/tsne_umi.xls"), emit: tsne_umi
     tuple val(sample), path("${sample}/Analysis/step4/FindAllMarkers.xls"), emit:diff_data
+    path("${sample}/")
     
     script:
     def cores = Math.max(1, task.cpus - 2)

@@ -259,7 +259,7 @@ def get_gex_tsne(tsnefile):
     nCount_RNA = tsne_d['nCount_RNA']
     nFeature_RNA = tsne_d['nFeature_RNA']
     mito = tsne_d['percent.mito']
-    cluster = tsne_d['seurat_clusters']
+    cluster = tsne_d['RNA_snn_res.0.8']
     Total_CpG_number = tsne_d['total_cpg_number']
     CpG_methylation_level = tsne_d['CpG%']
     CH_methylation_level = tsne_d['CH%']
