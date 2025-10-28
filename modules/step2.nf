@@ -60,7 +60,7 @@ process BISMARK_ALIGNMENT_REVERSE {
 // BAM file sorting (by read name)
 process SORT_BAM_BY_NAME {
     tag "$sample-SORT_BAM_BY_NAME"
-    publishDir "${params.outdir}/${sample}_methy/step2/bismark/"
+    //publishDir "${params.outdir}/${sample}_methy/step2/bismark/"
     
     input:
     tuple val(sample), val(pair_id), path(bismark_bam)
@@ -69,11 +69,12 @@ process SORT_BAM_BY_NAME {
     tuple val(sample), val(pair_id), path("${bismark_bam.baseName}_sortbyname.bam"), emit: bismark_sortn_bam
     
     script:
+    def cores = Math.max(1, task.cpus - 2)
     """
     set -e
     # Sort by read name
     samtools sort \
-        -n -@ ${task.cpus} \
+        -n -@ ${cores} \
         -o ${bismark_bam.baseName}_sortbyname.bam \
         ${bismark_bam}
     """

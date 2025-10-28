@@ -115,8 +115,8 @@ class Reader(Process):
         try:
             chunk_index = 0
             for file1, file2 in zip(self.file1, self.file2):
-                with xopen(file1, 'rb') as f1:
-                    with xopen(file2, 'rb') as f2:
+                with xopen(file1, 'rb', threads=4) as f1:
+                    with xopen(file2, 'rb', threads=4) as f2:
                         for (chunk1, chunk2) in dnaio.read_paired_chunks(f1, f2, self.buffer_size):
                             worker_index = self.queue.get()
                             pipe = self.connections[worker_index]
@@ -154,28 +154,28 @@ class Writer:
             # Create output files for both chain directions
             self.file1_forward = f"{file}_forward_1.fq.gz"
             self.file2_forward = f"{file}_forward_2.fq.gz"
-            self._fh1_forward = xopen(self.file1_forward, mode='wb')
-            self._fh2_forward = xopen(self.file2_forward, mode='wb')
+            self._fh1_forward = xopen(self.file1_forward, mode='wb', threads=4, compresslevel=1)
+            self._fh2_forward = xopen(self.file2_forward, mode='wb', threads=4, compresslevel=1)
             
             self.file1_reverse = f"{file}_reverse_1.fq.gz"
             self.file2_reverse = f"{file}_reverse_2.fq.gz"
-            self._fh1_reverse = xopen(self.file1_reverse, mode='wb')
-            self._fh2_reverse = xopen(self.file2_reverse, mode='wb')
+            self._fh1_reverse = xopen(self.file1_reverse, mode='wb', threads=4, compresslevel=1)
+            self._fh2_reverse = xopen(self.file2_reverse, mode='wb', threads=4, compresslevel=1)
 
             self.file1_multi = f"{file_multi}_1.fq.gz"
             self.file2_multi = f"{file_multi}_2.fq.gz"
-            self._fh_multi1 = xopen(self.file1_multi, mode='wb')
-            self._fh_multi2 = xopen(self.file2_multi, mode='wb')
+            self._fh_multi1 = xopen(self.file1_multi, mode='wb', threads=4, compresslevel=1)
+            self._fh_multi2 = xopen(self.file2_multi, mode='wb', threads=4, compresslevel=1)
         else:
             # Single-end output
             self.file_forward = f"{file}_forward.fq.gz"
-            self._fh_forward = xopen(self.file_forward, mode='wb')
+            self._fh_forward = xopen(self.file_forward, mode='wb', threads=4, compresslevel=1)
             
             self.file_reverse = f"{file}_reverse.fq.gz"
-            self._fh_reverse = xopen(self.file_reverse, mode='wb')
+            self._fh_reverse = xopen(self.file_reverse, mode='wb', threads=4, compresslevel=1)
 
             self.file_multi = f"{file_multi}.fq.gz"
-            self._fh_multi1 = xopen(self.file_multi, mode='wb')
+            self._fh_multi1 = xopen(self.file_multi, mode='wb', threads=4, compresslevel=1)
 
         self._chunks = dict()
         self._current_index = 0
@@ -224,11 +224,11 @@ class Writer:
                 base_path = self.file1_forward.replace('_forward_1.fq.gz', '')
                 file1 = f"{base_path}_{direction}_{prefix}_1.fq.gz"
                 file2 = f"{base_path}_{direction}_{prefix}_2.fq.gz"
-                self.file_handles[key] = (xopen(file1, mode='wb'), xopen(file2, mode='wb'))
+                self.file_handles[key] = (xopen(file1, mode='wb', threads=4, compresslevel=1), xopen(file2, mode='wb', threads=4, compresslevel=1))
             else:
                 base_path = self.file_forward.replace('_forward.fq.gz', '')
                 file1 = f"{base_path}_{direction}_{prefix}.fq.gz"
-                self.file_handles[key] = (xopen(file1, mode='wb'),)
+                self.file_handles[key] = (xopen(file1, mode='wb', threads=4, compresslevel=1),)
         return self.file_handles[key]
 
     def _process_split_data(self, r1_data, r2_data, direction):
@@ -667,7 +667,7 @@ def read_file(file_list: list) -> dict:
     wl_dict = dict()
     for i, wl_file in enumerate(file_list):
         white_list = set()
-        with xopen(wl_file, "r") as fh:
+        with xopen(wl_file, "r", threads=4) as fh:
             for l in fh:
                 if l.startswith("#"):
                     continue
@@ -927,19 +927,19 @@ def process_barcode(fq1, fq2, fq_out_forward, fq_out_reverse, fqout_multi, r1_st
     
     adapter_filter = AdapterFilter(adapter1=adapter1, adapter2=adapter2, non_insert_len=non_insert_len, chemistry=chemistry)
     
-    fh = dnaio.open(fq1, fq2, fileformat="fastq", mode="r")
+    fh = dnaio.open(fq1, fq2, fileformat="fastq", mode="r", open_threads=4)
     if paired_out:
-        outfh_forward = dnaio.open(fq_out_forward[0], fq_out_forward[1], fileformat="fastq", mode="w")
-        outfh_reverse = dnaio.open(fq_out_reverse[0], fq_out_reverse[1], fileformat="fastq", mode="w")
+        outfh_forward = dnaio.open(fq_out_forward[0], fq_out_forward[1], fileformat="fastq", mode="w", open_threads=4)
+        outfh_reverse = dnaio.open(fq_out_reverse[0], fq_out_reverse[1], fileformat="fastq", mode="w", open_threads=4)
     else:
-        outfh_forward = dnaio.open(fq_out_forward[0], fileformat="fastq", mode="w")
-        outfh_reverse = dnaio.open(fq_out_reverse[0], fileformat="fastq", mode="w")
+        outfh_forward = dnaio.open(fq_out_forward[0], fileformat="fastq", mode="w", open_threads=4)
+        outfh_reverse = dnaio.open(fq_out_reverse[0], fileformat="fastq", mode="w", open_threads=4)
 
     if use_multi:
         if paired_out:
-            outfh_multi = dnaio.open(fqout_multi[0], fqout_multi[1], fileformat="fastq", mode="w")
+            outfh_multi = dnaio.open(fqout_multi[0], fqout_multi[1], fileformat="fastq", mode="w", open_threads=4)
         else:
-            outfh_multi = dnaio.open(fqout_multi[0], fileformat="fastq", mode="w")
+            outfh_multi = dnaio.open(fqout_multi[0], fileformat="fastq", mode="w", open_threads=4)
     
     for r1, r2 in fh:
         stat_Dict["total"] += 1
@@ -1288,19 +1288,19 @@ def barcode_main(chemistry, fq1:list, fq2:list, samplename: str, outdir:str,
                     if prefix not in forward_files:
                         file1 = f"{fqout_forward}_{prefix}_1.fq.gz"
                         file2 = f"{fqout_forward}_{prefix}_2.fq.gz"
-                        forward_files[prefix] = dnaio.open(file1, file2, mode="a")
+                        forward_files[prefix] = dnaio.open(file1, file2, mode="a", open_threads=4)
                     return forward_files[prefix]
                 elif direction == 'reverse':
                     if prefix not in reverse_files:
                         file1 = f"{fqout_reverse}_{prefix}_1.fq.gz"
                         file2 = f"{fqout_reverse}_{prefix}_2.fq.gz"
-                        reverse_files[prefix] = dnaio.open(file1, file2, mode="a")
+                        reverse_files[prefix] = dnaio.open(file1, file2, mode="a", open_threads=4)
                     return reverse_files[prefix]
                 return None
         
-        with dnaio.open(fqout_forward + "_1.fq.gz", fqout_forward + "_2.fq.gz", mode="a") as f_forward:
-            with dnaio.open(fqout_reverse + "_1.fq.gz", fqout_reverse + "_2.fq.gz", mode="a") as f_reverse:
-                fh = dnaio.open(fqout_multi1, fqout_multi2, fileformat="fastq", mode="r")
+        with dnaio.open(fqout_forward + "_1.fq.gz", fqout_forward + "_2.fq.gz", mode="a", open_threads=4) as f_forward:
+            with dnaio.open(fqout_reverse + "_1.fq.gz", fqout_reverse + "_2.fq.gz", mode="a", open_threads=4) as f_reverse:
+                fh = dnaio.open(fqout_multi1, fqout_multi2, fileformat="fastq", mode="r", open_threads=4)
                 for r1, r2 in fh:
                     multi_stat["total"] += 1
                     final_barcode = None

@@ -94,6 +94,7 @@ process ALLCOOLS_BAM_TO_ALLC {
     tuple val(sample), val(pair_id), path("${sc_merged_bam_dir.baseName}_allcools"), emit: allcools_allc_output
     
     script:
+    def cores = Math.max(1, task.cpus - 2)
     """
     set -e     
     # Run allcools to generate datasets
@@ -104,7 +105,7 @@ process ALLCOOLS_BAM_TO_ALLC {
         --genomefa ${params.genomefa} \
         --chrom_size_path ${params.chrom_size_path} \
         --filtered_barcode ${filtered_barcode} \
-        --core ${task.cpus} \
+        --core ${cores} \
         --tag UR
     
     """
@@ -134,7 +135,7 @@ process MERGE_FILTERED_BARCODE_READS_COUNTS {
 // run allcools generate-datasets
 process ALLCOOLS_GENERATE_DATASETS {
     tag "$sample-ALLCOOLS_GENERATE_DATASETS"
-    publishDir "${params.outdir}/${sample}_methy/step3/allcools_generate_datasets"
+    publishDir "${params.outdir}/${sample}_methy/step3/allcools_generate_datasets/"
     
     input:
     tuple val(sample), path(allcools), path(filtered_barcode)
@@ -143,6 +144,7 @@ process ALLCOOLS_GENERATE_DATASETS {
     tuple val(sample), path("${sample}.mcds"), emit: allcools_generate_datasets
     
     script:
+    def cores = Math.max(1, task.cpus - 2)
     """
     set -e      
     ls */*_allc.gz | while read id; do
@@ -177,7 +179,7 @@ process ALLCOOLS_GENERATE_DATASETS {
         --output_path ./${sample}.mcds \
         --chrom_size_path ${params.chrom_size_path} \
         --obs_dim cell \
-        --cpu ${task.cpus} \
+        --cpu ${cores} \
         \$REGIONS_PARAMS \
         \$QUANTIFIERS_PARAMS
     """
@@ -185,7 +187,7 @@ process ALLCOOLS_GENERATE_DATASETS {
 // merge single cell allc to bulk allc
 process ALLCOOLS_MERGE {
     tag "$sample-ALLCOOLS_MERGE"
-    publishDir "${params.outdir}/${sample}_methy/step3"
+    publishDir "${params.outdir}/${sample}_methy/step3/"
 
     input:
     tuple val(sample), path(allcools_allc_output)
@@ -194,13 +196,14 @@ process ALLCOOLS_MERGE {
     tuple val(sample), path("${sample}_merge_allc.gz"), path("${sample}_merge_allc.gz.tbi"), emit: allcools_merge_allc
 
     script:
+    def cores = Math.max(1, task.cpus - 2)
     """
     set -e     
     # Run allcools to merge datasets, about 12h
     set -e
     ls */*_allc.gz > merge_list.txt
     allcools merge \
-    --cpu ${task.cpus} \
+    --cpu ${cores} \
     --allc_paths merge_list.txt \
     --output_path ${sample}_merge_allc.gz \
     --chrom_size_path ${params.chrom_size_path}
@@ -211,7 +214,7 @@ process ALLCOOLS_MERGE {
 // extract cg context allc
 process ALLCOOLS_EXTRACT {
     tag "$sample-ALLCOOLS_EXTRACT"
-    publishDir "${params.outdir}/${sample}_methy/step3"
+    publishDir "${params.outdir}/${sample}_methy/step3/"
 
     input:
     tuple val(sample), path(allcools_merge_allc), path(allcools_merge_allc_tbi)
