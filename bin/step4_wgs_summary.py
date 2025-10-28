@@ -287,13 +287,13 @@ def parse_cell_info(cells_reads_csv: str, cells_allc_metric_csv: str) -> dict:
         "Estimated Number of Cells": cells_reads.shape[0],
         "Genome Coverage rate of max cell": max_genome_cov,
         "Saturation of max cell": max_cell_saturation,
-        "CPGs of max cell": max_total_cpg_number,
-        "Reads of max cell": max_reads_counts,
+        "CPGs of max cell": int(max_total_cpg_number),
+        "Reads of max cell": int(max_reads_counts),
         "Genome Coverage rate of median cell": median_genome_cov,
         "Saturation of median cell": median_cell_saturation,
-        "CPGs of median cell": median_total_cpg_number,
-        "Reads of median cell": median_reads_counts,
-        "Reads in Cells": sum(cells_reads["reads_counts"])  # Default value, should be calculated elsewhere
+        "CPGs of median cell": int(median_total_cpg_number),
+        "Reads of median cell": int(median_reads_counts),
+        "Reads in Cells": int(sum(cells_reads["reads_counts"]))  # Default value, should be calculated elsewhere
     }
     return cell_info
 
@@ -387,8 +387,8 @@ def outcsv(outdir, samplename, summary_json, genome_info_json):
     cellnum = f'{summary["cells"]["Estimated Number of Cells"]}'
     summary["cells"]["Fraction Reads in Cells"] = summary["cells"]["Reads in Cells"] / summary["mapping"]["uniquereads"]
     fraction = f'{summary["cells"]["Fraction Reads in Cells"]:.2%}' 
-    
-
+    with open(summary_json, 'w') as fh:
+        json.dump(summary, fh, indent=4)
 
     header=('Samplename,Estimated_Number_of_Cells,Number_of_Reads,Valid_Barcode_Ratio,Dropped_Too_Short,Dropped_Chimeric,Valid_7F_Reads_Rate,Valid_17LME_Reads_Rate,Valid_7F17LME_Reads_Rate,C-T_Conversion,C-C_Ratio,'
             'Reads_Mapped_to_Genome,Reads_Mapped_Confidently_to_Genome,CpG_Methylation_Rate,CHG_Methylation_Rate,CHH_Methylation_Rate,Unknown_Methylation_Rate,CpG_Coverage_Rate,'
@@ -429,6 +429,6 @@ def outcsv(outdir, samplename, summary_json, genome_info_json):
     with open(os.path.join(outdir, f'{samplename}_wgs_summary.csv'), 'w') as fh:
         fh.write(header + '\n')
         fh.write(','.join(str(_).replace(',', '') for _ in summary_data)+ '\n')
-
+        
 if __name__ == "__main__":
     outcsv()
