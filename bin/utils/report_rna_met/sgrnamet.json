@@ -299,7 +299,7 @@
                     "Total CpGs Detected": "-"
                 },
                 "description": {
-                    "Reads Mapped to Genome": "Total number of reads mapped to the genome.",
+                    "Reads Mapped to Genome": "Fraction of reads mapped to the genome.",
                     "Reads Mapped Confidently to Genome": "Fraction of reads uniquely mapped to the genome.",
                     "CpG Methylation Rate": "CpG methylation rate.",
                     "CHG Methylation Rate": "CHG methylation rate.",
