@@ -2,7 +2,7 @@
 
 /*
  * Single-cell RNA-seq and methylation analysis pipeline
- * Version: 4.0.0
+ * Version: 1.0.0
  */
 
 nextflow.enable.dsl=2
@@ -42,11 +42,11 @@ params.help = false
 // Help message
 def helpMessage() {
     log.info"""
-    Single-cell RNA-seq and methylation analysis pipeline - v4.0.0
+    Single-cell RNA-seq and methylation analysis pipeline - v1.0.0
     
     Usage:
     Batch sample analysis:
-        nextflow run sc_methy_workflow_v4.nf --samplesheet samples.csv --outdir results
+        nextflow run main.nf --samplesheet samples.csv --outdir results --database refdata-cellranger-arc-GRCh38-2024-A
     """.stripIndent()
 }
 
