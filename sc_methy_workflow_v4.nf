@@ -16,19 +16,22 @@ params.samplesheet = null
 params.outdir = "./results"
     
 // Database file paths
-params.database_dir = "/PROJ2/FLOAT/maxingyong/development/sc_methy/database_v1/refdata-cellranger-arc-GRCh38-2024-A"
+params.database_dir = ""
 params.genomeDir = "${params.database_dir}/star"
 params.genomefa = "${params.database_dir}/fasta/genome.fa"
 params.gtf = "${params.database_dir}/genes/genes.gtf"
 params.bismark_ref = "${params.database_dir}/fasta/"
 params.chrom_size_path = "${params.database_dir}/bed/chr_nochrM.bed"
-params.cbcsv = "${projectDir}/bin/barcodes/bUCB3_whitelist.csv"
 params.methy_barcode_wl = "${projectDir}/bin/barcodes/U3CB_methylation.txt"
 params.chemistry = "DD-M"
 if (params.chemistry == "DD-M") {
     params.exp_chemistry = "DDV2"
+    params.cbcsv = "${projectDir}/bin/barcodes/DD-M_bUCB3_whitelist.csv"
+    params.methy_barcode_wl = "${projectDir}/bin/barcodes/U3CB_methylation.txt"
 }else if (params.chemistry == "ME5") {
     params.exp_chemistry = "ME5"
+    params.cbcsv = "${projectDir}/bin/barcodes/ME5_bUCB3_whitelist.csv"
+    params.methy_barcode_wl = "${projectDir}/bin/barcodes/U3CB_methylation.txt"
 }
 params.split_fastq = 4
 params.filter_ch = 2
@@ -60,9 +63,8 @@ if (!params.samplesheet) {
 
 include {
    COMPUTE_CPG_SITES;
-   MERGE_SAMPLE_DATA;
-   FASTP_EXPRESSION;
-   FASTP_METHYLATION;
+   FASTP_EXPRESSION_MULTI;
+   FASTP_METHYLATION_MULTI;
    SEEKSOULTOOLS_RNA;
    METHYLATION_BARCODE_EXTRACTION;
    
@@ -186,31 +188,57 @@ workflow {
     // Total CG sites in genome
     cpg_sites = COMPUTE_CPG_SITES()
     
-    // Check if OSS data download is needed
-    oss_data = input_ch.branch {
-        has_oss: it[1].any { key, file_list -> 
-            file_list.any { file -> file.toString().startsWith('oss://') }
+    // Build per-group tuples (no merging; each group goes through fastp)
+    exp_groups = input_ch.map { sample_id, files ->
+        def r1s = files['expression_r1'] ?: []
+        def r2s = files['expression_r2'] ?: []
+        def pairs = []
+        def n = Math.max(r1s.size(), r2s.size())
+        (0..<n).each { idx ->
+            def r1 = idx < r1s.size() ? r1s[idx] : r1s.last()
+            def r2 = idx < r2s.size() ? r2s[idx] : r2s.last()
+            pairs.add(tuple(sample_id, "G${idx+1}", r1, r2))
         }
-        local_only: true
-    }
-    
-    // Merge local and OSS data (OSS data will be downloaded in MERGE_SAMPLE_DATA process)
-    all_data = oss_data.has_oss.mix(oss_data.local_only)
-    
-    // Data merging
-    merged_data = MERGE_SAMPLE_DATA(all_data)
-    
-    // Expression data quality control
-    exp_clean = FASTP_EXPRESSION(merged_data.map{it -> tuple(it[0], it[1], it[2])})
-    
-    // Methylation data quality control
-    methy_clean = FASTP_METHYLATION(merged_data.map{it -> tuple(it[0], it[3], it[4])})
-    
-    // RNA expression analysis
-    rna_results = SEEKSOULTOOLS_RNA(exp_clean.rna_fastp_data)
-    
-    // Methylation barcode extraction
-    methy_barcode = METHYLATION_BARCODE_EXTRACTION(methy_clean.methy_fastp_data)
+        return pairs
+    }.flatMap { it }
+
+    methy_groups = input_ch.map { sample_id, files ->
+        def r1s = files['methylation_r1'] ?: []
+        def r2s = files['methylation_r2'] ?: []
+        def pairs = []
+        def n = Math.max(r1s.size(), r2s.size())
+        (0..<n).each { idx ->
+            def r1 = idx < r1s.size() ? r1s[idx] : r1s.last()
+            def r2 = idx < r2s.size() ? r2s[idx] : r2s.last()
+            pairs.add(tuple(sample_id, "G${idx+1}", r1, r2))
+        }
+        return pairs
+    }.flatMap { it }
+
+    // Run fastp per group
+    exp_clean_multi = FASTP_EXPRESSION_MULTI(exp_groups)
+    methy_clean_multi = FASTP_METHYLATION_MULTI(methy_groups)
+
+    // Assemble cleaned file lists for downstream multi-input tools (stageable paths)
+    exp_clean_pairs = exp_clean_multi.rna_fastp_multi_data
+        .groupTuple(by: 0)
+        .map { t ->
+            // t is [sample, groups, r1s, r2s]
+            tuple(t[0], t[2], t[3])
+        }
+
+    methy_clean_pairs = methy_clean_multi.methy_fastp_multi_data
+        .groupTuple(by: 0)
+        .map { t ->
+            // t is [sample, groups, r1s, r2s]
+            tuple(t[0], t[2], t[3])
+        }
+
+    // RNA expression analysis with multi-group inputs
+    rna_results = SEEKSOULTOOLS_RNA(exp_clean_pairs)
+
+    // Methylation barcode extraction with multi-group inputs
+    methy_barcode = METHYLATION_BARCODE_EXTRACTION(methy_clean_pairs)
 
     // Parse and group fastq files
     parsed_files = PARSE_FASTQ_FILES(methy_barcode.methy_barcode_output)
@@ -411,17 +439,20 @@ workflow {
             .map{it -> tuple(it[0], it[1])}, by: 0))
     
     // Multi-report
+    /*
     multi_report = MULTI_REPORT(
        rna_results.gex_summary_json
        .combine(rna_results.filtered_dir, by: 0)
        .combine(rna_results.raw_dir, by: 0)
+       .combine(rna_results.counts_xls, by: 0)
+       .combine(rna_results.detail_xls, by: 0)
        .combine(rna_results.tsne_umi, by: 0)
        .combine(rna_results.diff_data, by: 0)
        .combine(methylation_summary.methy_summary.map {it -> tuple(it[0], it[1])}, by: 0)
        .combine(merged_counts.merged_filtered_barcode_reads_counts.map {it -> tuple(it[0], it[2])}, by: 0)
        .combine(merged_counts.allcools_cells_csv_output, by: 0)
     )
-    
+    */
 }
 
 /*
